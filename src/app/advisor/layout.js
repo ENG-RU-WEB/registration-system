@@ -8,47 +8,24 @@ import {
   BookOpen,
   ClipboardList,
   Calendar,
+  UserSearch,
   GraduationCap
 } from 'lucide-react'
+
+
 
 import Link from 'next/link'
 import Image from 'next/image'
 
-import { useRouter } from 'next/navigation'
 import { usePathname } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { useState, useEffect } from 'react'
 
-export default function StudentLayout({ children }) {
+export default function ServiceLayout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false)
-  const router = useRouter()
   const pathname = usePathname()
-  const [student, setStudent] = useState(null)
-
-  useEffect(() => {
-    const fetchStudentInfo = async () => {
-      const studentId = localStorage.getItem('username')
-      if (!studentId) return
-
-      const { data, error } = await supabase
-        .from('student_info')
-        .select('STD_CODE, FIRST_NAME_THAI, LAST_NAME_THAI')
-        .eq('STD_CODE', studentId)
-        .maybeSingle()
-
-      if (!error && data) {
-        setStudent(data)
-      }
-    }
-
-    const id = localStorage.getItem('username')
-      if (!id) {
-        router.push('/login')  // หากไม่มี username ให้กลับไป login
-      }
-
-    fetchStudentInfo()
-  }, [])
-
+  const router = useRouter()
   const handleLogout = () => {
     localStorage.clear() // หรือใช้ localStorage.removeItem('student_id') เฉพาะรายการก็ได้
     router.push('/login') // กลับไปหน้า login
@@ -67,10 +44,8 @@ export default function StudentLayout({ children }) {
           </h1>
         </div>
 
-        <div className="absolute left-1/2 top-28 transform -translate-x-1/2 text-center text-l md:text-lg text-black whitespace-nowrap">
-          {student
-            ? `${student.FIRST_NAME_THAI} ${student.LAST_NAME_THAI} (รหัสนักศึกษา: ${student.STD_CODE})`
-            : ''}
+        <div className="absolute left-1/2 top-24 transform -translate-x-1/2 text-2xl text-black">
+            อาจารย์ที่ปรึกษา
         </div>
 
         <div className="hidden md:block text-sm text-right leading-tight text-black">
@@ -93,18 +68,10 @@ export default function StudentLayout({ children }) {
           style={{ width: '240px', maxHeight: 'calc(100vh - 96px)' }}
         >
           <nav className="flex flex-col gap-2">
-            <Link href="/student" className={`flex items-center gap-2 p-2 rounded shadow
-                      ${isActive('/student') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
-                <User className="w-5 h-5" /> ข้อมูลนักศึกษา
-            </Link>
-            <Link href="/student/grading" className={`flex items-center gap-2 p-2 rounded shadow
-                      ${isActive('/student/grading') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
-                <BookOpen className="w-5 h-5" /> ผลการเรียน
-            </Link>
-            <Link href="/student/graduation" className={`flex items-center gap-2 p-2 rounded shadow
-                      ${isActive('/student/graduation') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
-              <GraduationCap className="w-5 h-5" /> จบการศึกษา
-            </Link>
+          <Link href="/advisor/graduation" className={`flex items-center gap-2 p-2 rounded shadow
+                    ${isActive('/advisor/graduation') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
+              <GraduationCap className="w-5 h-5" /> ตรวจสอบการจบการศึกษา
+          </Link>
             <button className="flex items-center gap-2 bg-black text-white mt-4 p-2 rounded shadow w-full">
               <LogOut className="w-5 h-5" /> ออกจากระบบ
             </button>
@@ -114,18 +81,10 @@ export default function StudentLayout({ children }) {
         {/* Sidebar (Desktop) */}
         <aside className="hidden md:flex flex-col gap-2 bg-[#7c0a0a] text-white p-4 rounded-xl shadow-lg ml-6 mt-6 md:w-64 max-w-xs md:h-fit">
           <nav className="flex flex-col gap-2">
-            <Link href="/student" className={`flex items-center gap-2 p-2 rounded shadow
-                      ${isActive('/student') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
-                <User className="w-5 h-5" /> ข้อมูลนักศึกษา
-            </Link>
-            <Link href="/student/grading" className={`flex items-center gap-2 p-2 rounded shadow
-                      ${isActive('/student/grading') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
-                <BookOpen className="w-5 h-5" /> ผลการเรียน
-            </Link>
-            <Link href="/student/graduation" className={`flex items-center gap-2 p-2 rounded shadow
-                      ${isActive('/student/graduation') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
-              <GraduationCap className="w-5 h-5" /> จบการศึกษา
-            </Link>
+          <Link href="/advisor/graduation" className={`flex items-center gap-2 p-2 rounded shadow
+                    ${isActive('/advisor/graduation') ? 'bg-white text-[#7c0a0a]' : 'hover:bg-red-800'}`}>
+              <UserSearch className="w-5 h-5" /> ตรวจสอบการจบการศึกษา
+          </Link>
             <button className="flex items-center gap-2 bg-black text-white mt-4 p-2 rounded shadow w-full"
               onClick={handleLogout}>
               <LogOut className="w-5 h-5" /> ออกจากระบบ

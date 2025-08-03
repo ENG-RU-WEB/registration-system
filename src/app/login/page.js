@@ -2,7 +2,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import Image from 'next/image';
+import bcrypt from 'bcryptjs'
+import Image from 'next/image'
 
 export default function LoginPage() {
   const [username, setUsername] = useState('')
@@ -17,27 +18,42 @@ export default function LoginPage() {
     const cleanedUsername = username.trim()
     const cleanedPassword = password.trim()
 
+    // 1️⃣ ดึงข้อมูลจาก Supabase ด้วย username
     const { data, error } = await supabase
-      .from('student_info')
+      .from('authentication')
       .select('*')
-      .eq('STD_CODE', cleanedUsername)
-      .eq('password', cleanedPassword)
+      .eq('username', cleanedUsername)
       .maybeSingle()
 
-    console.log("✅ data:", data)
-    console.log("❌ error:", error)
-
     if (error || !data) {
-      console.error("❌ ไม่พบข้อมูลผู้ใช้หรือรหัสผ่านผิด:", error)
-      setMessage('❌ รหัสนักศึกษาหรือรหัสผ่านไม่ถูกต้อง')
-    } else {
-      console.log("✅ พบข้อมูลผู้ใช้:", data)
+      setMessage('❌ ไม่พบผู้ใช้งานนี้')
+      return
+    }
 
-      // ✅ เซฟ student_id ที่ได้จริงจากฐานข้อมูล
-      localStorage.setItem('student_id', data.STD_CODE)
+    // 2️⃣ เปรียบเทียบรหัสผ่านที่กรอกกับ hashed password
+    const isValid = await bcrypt.compare(cleanedPassword, data.password)
 
-      // เปลี่ยนหน้า
+    if (!isValid) {
+      setMessage('❌ รหัสผ่านไม่ถูกต้อง')
+      return
+    }
+
+    // 3️⃣ สำเร็จ: บันทึกข้อมูลและเปลี่ยนหน้า
+    localStorage.setItem('username', data.username)
+    localStorage.setItem('role', data.role)
+
+    if (data.role === 'student') {
       router.push('/student')
+    } else if (data.role === 'finance') {
+      router.push('/finance')
+    } else if (data.role === 'service') {
+      router.push('/service')
+    } else if (data.role === 'advisor') {
+      router.push('/advisor/graduation')  
+    } else if (data.role === 'admin') {
+      router.push('/admin')
+    } else {
+      router.push('/')
     }
   }
 
@@ -45,15 +61,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-white px-4">
       <div className="w-full max-w-md bg-white p-8 rounded-lg shadow-md border border-gray-200">
         <div className="flex justify-center mb-4">
-          <Image src="/logo.png" alt="Logo" width={120} height={120} className="object-contain" />
+          <Image src="/logo.png" alt="Logo" width={120} height={120} />
         </div>
         <h2 className="text-center text-2xl font-bold text-[#7c0a0a] mb-6">ระบบลงทะเบียน</h2>
 
-        {/* ✅ ใส่ form และ onSubmit */}
         <form onSubmit={handleLogin}>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">รหัสประจำตัวนักศึกษา</label>
+              <label className="block text-sm font-medium text-gray-700">ชื่อผู้ใช้</label>
               <input
                 type="text"
                 className="mt-1 w-full border-0 border-b-2 border-gray-300 focus:border-[#7c0a0a] focus:outline-none focus:ring-0 px-0 py-1 bg-transparent"
@@ -80,7 +95,6 @@ export default function LoginPage() {
             <button type="button" className="hover:text-[#7c0a0a] transition-colors">ลืมรหัสผ่าน</button>
           </div>
 
-          {/* ✅ ปุ่ม submit อยู่ใน form */}
           <button
             type="submit"
             className="mt-6 w-full bg-[#b06b6b] hover:bg-[#7c0a0a] text-white font-bold py-2 rounded-md transition-colors"
@@ -89,11 +103,10 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* แสดงข้อความผิดพลาด */}
         {message && (
           <p className="mt-4 text-center text-sm text-red-600">{message}</p>
         )}
       </div>
     </div>
-  );
+  )
 }

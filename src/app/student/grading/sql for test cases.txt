@@ -1,0 +1,38 @@
+WITH student_range AS (
+  SELECT 
+    s."STD_CODE",
+    s."ENROLL_YEAR"::int AS start_year,
+    MAX(g."REGIS_YEAR")::int AS end_year
+  FROM student_info s
+  JOIN grading g ON s."STD_CODE" = g."STD_CODE"
+  GROUP BY s."STD_CODE", s."ENROLL_YEAR"
+),
+
+all_terms AS (
+  SELECT 
+    r."STD_CODE",
+    y::text AS "REGIS_YEAR",
+    s::text AS "REGIS_SEMESTER"
+  FROM student_range r,
+    generate_series(r.start_year, r.end_year) AS y,
+    generate_series(1, 2) AS s
+),
+
+actual_terms AS (
+  SELECT DISTINCT "STD_CODE", "REGIS_YEAR", "REGIS_SEMESTER"
+  FROM grading
+  WHERE "REGIS_SEMESTER" IN ('1', '2')
+),
+
+missing_terms AS (
+  SELECT a.*
+  FROM all_terms a
+  LEFT JOIN actual_terms g
+    ON a."STD_CODE" = g."STD_CODE"
+    AND a."REGIS_YEAR" = g."REGIS_YEAR"
+    AND a."REGIS_SEMESTER" = g."REGIS_SEMESTER"
+  WHERE g."STD_CODE" IS NULL
+)
+
+SELECT * FROM missing_terms
+ORDER BY "STD_CODE", "REGIS_YEAR", "REGIS_SEMESTER";

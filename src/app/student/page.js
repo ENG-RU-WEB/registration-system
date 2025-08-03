@@ -1,15 +1,16 @@
 'use client'
-import { User } from 'lucide-react'
+
 import { useEffect, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { User } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function StudentPage() {
-  const [data, setData] = useState(null)
+  const [student, setStudent] = useState(null)
 
   useEffect(() => {
-    const fetchData = async () => {
-      const studentId = localStorage.getItem('student_id')
+    const fetchStudentInfo = async () => {
+      const studentId = localStorage.getItem('username')
+
       if (!studentId) return
 
       const { data, error } = await supabase
@@ -19,53 +20,74 @@ export default function StudentPage() {
         .maybeSingle()
 
       if (error) {
-        console.error('❌ error fetching student data:', error)
-      } else {
-        setData(data)
+        console.error('Error fetching student info:', error)
+        return
+      }
+
+      if (data) {
+        setStudent(data)
+        localStorage.setItem('majorNo', data.MAJOR_NO)  // สำคัญมากสำหรับ CUR_YEAR ต่อไป
       }
     }
 
-    fetchData()
+    fetchStudentInfo()
   }, [])
 
-  if (!data) {
-    return (
-      <div className="min-h-screen flex justify-center items-center">
-        ⏳ กำลังโหลดข้อมูล...
-      </div>
-    )
+  if (!student) return <p className="text-center p-4">⏳ กำลังโหลดข้อมูล...</p>
+
+  function formatThaiDate(isoDate) {
+  if (!isoDate) return 'ไม่ระบุ'
+
+  const monthsThai = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ]
+
+  const [month, day, year] = isoDate.split('/')
+  const thaiYear = parseInt(year) + 543
+  const monthName = monthsThai[parseInt(month) - 1]
+
+  return `${parseInt(day)} ${monthName} พ.ศ. ${thaiYear}`
   }
 
-  const fullName = [
-    data.title?.PRENAME_THAI_S,
-    data.FIRST_NAME_THAI,
-    data.MIDDLE_NAME_THAI,
-    data.LAST_NAME_THAI,
-  ].filter(Boolean).join(' ')
-
-  const major = data.major?.MAJOR_NAME_THAI || 'ไม่ระบุ'
-
   return (
-    <div className="flex justify-center px-4 py-8">
-      <div className="bg-white p-6 rounded border-2 border-[#7c0a0a] shadow-md w-full max-w-4xl">
-      <div className="flex items-center gap-2 mb-4">
-        <User className="w-5 h-5 text-[#7c0a0a]" />
-        <h2 className="text-xl font-bold text-[#7c0a0a]">ข้อมูลนักศึกษา</h2>
+  <div className="p-4 max-w-3xl mx-auto bg-white shadow-md rounded-md border border-gray-200">
+    <div className="flex items-center gap-2 text-xl font-bold text-[#7c0a0a] mb-4">
+      <User className="w-5 h-5" />
+      <span>ข้อมูลนักศึกษา</span>
+    </div>
+
+    <div className="grid grid-cols-2 gap-x-8 gap-y-4 text-base text-gray-700">
+      <div>
+        <p className="text-base font-normal text-gray-800">ชื่อ–นามสกุล:</p>
+        <p className="text-base font-bold text-gray-900">
+          {student.title?.PRENAME_THAI_S}{student.FIRST_NAME_THAI} {student.LAST_NAME_THAI}
+        </p>
+      </div>
+      <div>
+        <p className="text-base font-normal text-gray-800">เลขบัตรประชาชน:</p>
+        <p className="text-base font-bold text-gray-900">{student.CITIZEN_ID || 'ไม่ระบุ'}</p>
       </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm md:text-base">
-          <div>
-            <p><span className="font-bold">ชื่อ–นามสกุล:</span><br />{fullName}</p>
-            <p className="mt-2"><span className="font-bold">รหัสนักศึกษา:</span><br />{data.STD_CODE}</p>
-            <p className="mt-2"><span className="font-bold">สาขา:</span><br />{major}</p>
-          </div>
-          <div>
-            <p><span className="font-bold">เลขบัตรประชาชน:</span><br />{data.CITIZEN_ID}</p>
-            <p className="mt-2"><span className="font-bold">วันเกิด:</span><br />{data.BIRTHDATE || 'ไม่ระบุ'}</p>
-            <p className="mt-2"><span className="font-bold">กลุ่มเรียน:</span><br />{data.CLASS_GROUP || 'ไม่ระบุ'}</p>
-          </div>
-        </div>
-      </div>
+    <div>
+      <p className="text-base font-normal text-gray-800">รหัสนักศึกษา:</p>
+      <p className="text-base font-bold text-gray-900">{student.STD_CODE}</p>
     </div>
+    <div>
+      <p className="text-base font-normal text-gray-800">วันเกิด:</p>
+      <p className="text-base font-bold text-gray-900">{formatThaiDate(student.BIRTH_DATE) || 'ไม่ระบุ'}</p>
+    </div>
+
+    <div>
+      <p className="text-base font-normal text-gray-800">สาขา:</p>
+      <p className="text-base font-bold text-gray-900">{student.major?.MAJOR_NAME_THAI || 'ไม่ระบุ'}</p>
+    </div>
+    <div>
+      <p className="text-base font-normal text-gray-800">กลุ่มเรียน:</p>
+      <p className="text-base font-bold text-gray-900">{student.CLASS_GROUP || 'ไม่ระบุ'}</p>
+    </div>
+  </div>
+
+  </div>
   )
 }
